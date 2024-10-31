@@ -1,0 +1,35 @@
+---
+- name: Install and configure Web Server (NGINX)
+  hosts: staging
+  become: yes
+  vars:
+    source: /home/azureuser/ansible/test.html
+    destin: /var/www/html/index.html
+
+  tasks:
+  
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Start and enable NGINX service
+      systemd:
+        name: nginx
+        enabled: yes
+        state: started
+
+    - name: Copy test.html with custom content
+      copy:
+        src: "{{ source }}"
+        dest: "{{ destin }}"
+        mode: '0644'
+      notify:
+        - restart
+
+  handlers:
+    - name: restart
+      systemd:
+        name: nginx
+        state: restarted

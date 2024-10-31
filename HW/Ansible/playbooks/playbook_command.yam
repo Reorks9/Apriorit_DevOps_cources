@@ -1,0 +1,14 @@
+---
+- name: Simple commands
+  hosts: all
+  become: yes
+
+  tasks:
+ 
+  - name: Show etc catalog
+    shell: ls /etc 
+    register: ls_out
+
+  - name: Show ls output
+    debug: 
+      var: ls_out
