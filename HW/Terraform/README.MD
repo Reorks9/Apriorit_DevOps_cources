@@ -6,3 +6,5 @@ install azure-cli (https://developer.hashicorp.com/terraform/tutorials/azure-get
 best practices:
 https://www.terraform-best-practices.com/
     
+
+Password for SSH key: Uk27-2f@CesNM^+9
