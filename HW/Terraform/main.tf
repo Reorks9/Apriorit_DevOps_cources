@@ -16,22 +16,6 @@ resource "azurerm_virtual_network" "vnet" {
   address_space       = [var.address_space]
 }
 
-# Create a subnet1 within the virtual network
-resource "azurerm_subnet" "subnet1" {
-  name                 = var.subnet1_name
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = [var.subnet1_prefix]
-}
-
-# Create a subnet2 within the virtual network
-resource "azurerm_subnet" "subnet2" {
-  name                 = var.subnet2_name
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = [var.subnet2_prefix]
-}
-
 # Create a security group
 resource "azurerm_network_security_group" "nsg" {
   name                = var.nsg_name
@@ -65,22 +49,28 @@ resource "azurerm_network_security_group" "nsg" {
   }
 }
 
-# Associate NSG with Subnet1
-resource "azurerm_subnet_network_security_group_association" "subnet1_nsg_association" {
-  subnet_id                 = azurerm_subnet.subnet1.id
-  network_security_group_id = azurerm_network_security_group.nsg.id
+# Create subnets within the virtual network
+resource "azurerm_subnet" "subnet" {
+  count                = 2
+  # name                 = var.subnet1_name
+  name                 = "subnet${count.index + 1}"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  # address_prefixes     = [var.subnet1_prefix]
+  address_prefixes     = ["10.0.${count.index + 1}.0/24"]
 }
 
-# Associate NSG with Subnet2
-resource "azurerm_subnet_network_security_group_association" "subnet2_nsg_association" {
-  subnet_id                 = azurerm_subnet.subnet2.id
+# Associate NSG with Subnets
+resource "azurerm_subnet_network_security_group_association" "subnet_nsg_association" {
+  count                     = 2
+  subnet_id                 = azurerm_subnet.subnet[count.index].id
   network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
 # Public IP for VM1 and VM2
 resource "azurerm_public_ip" "pip" {
   count               = 2
-  name                = "${var.vm_name}-pip-${count.index}"
+  name                = "${var.vm_name}-pip-${count.index + 1}"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
@@ -89,13 +79,13 @@ resource "azurerm_public_ip" "pip" {
 # Network Interface for VM1 and VM2
 resource "azurerm_network_interface" "nic" {
   count               = 2
-  name                = "${var.vm_name}-nic-${count.index}"
+  name                = "${var.vm_name}-nic-${count.index + 1}"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
   ip_configuration {
     name                          = "internal"
-    subnet_id                     = azurerm_subnet.subnet1.id
+    subnet_id                     = azurerm_subnet.subnet[count.index].id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.pip[count.index].id
   }
@@ -104,11 +94,11 @@ resource "azurerm_network_interface" "nic" {
 # Create the VMs
 resource "azurerm_linux_virtual_machine" "vm" {
   count                 = 2
-  name                  = "${var.vm_name}-${count.index}"
+  name                  = "${var.vm_name}-${count.index + 1}"
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
   size                  = "Standard_B1s"
-  admin_username        = "adminuser"
+  admin_username        = var.admin_username
   network_interface_ids = [azurerm_network_interface.nic[count.index].id]
   disable_password_authentication = true
   
@@ -125,7 +115,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   }
 
   admin_ssh_key {
-    username   = "adminuser"
+    username   = var.admin_username
     public_key = file("QA1.pub")
   }
 

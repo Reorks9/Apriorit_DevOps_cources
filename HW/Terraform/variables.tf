@@ -16,17 +16,17 @@ variable "vnet_name" {
   default     = "TerraformVNet"
 }
 
-variable "subnet1_name" {
-  description = "Name of the subnet1"
-  type        = string
-  default     = "TerraformSubnet1"
-}
+# variable "subnet1_name" {
+#   description = "Name of the subnet1"
+#   type        = string
+#   default     = "TerraformSubnet1"
+# }
 
-variable "subnet2_name" {
-  description = "Name of the subnet2"
-  type        = string
-  default     = "TerraformSubnet2"
-}
+# variable "subnet2_name" {
+#   description = "Name of the subnet2"
+#   type        = string
+#   default     = "TerraformSubnet2"
+# }
 
 variable "address_space" {
   description = "Address space for the VNet"
@@ -34,17 +34,17 @@ variable "address_space" {
   default     = "10.0.0.0/16"
 }
 
-variable "subnet1_prefix" {
-  description = "Address prefix for the Subnet1"
-  type        = string
-  default     = "10.0.1.0/24"
-}
+# variable "subnet1_prefix" {
+#   description = "Address prefix for the Subnet1"
+#   type        = string
+#   default     = "10.0.1.0/24"
+# }
 
-variable "subnet2_prefix" {
-  description = "Address prefix for the Subnet2"
-  type        = string
-  default     = "10.0.2.0/24"
-}
+# variable "subnet2_prefix" {
+#   description = "Address prefix for the Subnet2"
+#   type        = string
+#   default     = "10.0.2.0/24"
+# }
 
 variable "nsg_name" {
   description = "Name of the security group"
