@@ -101,7 +101,6 @@ resource "azurerm_lb_probe" "http_probe" {
   name                = "httpProbe"
   protocol            = "Tcp"
   port                = 80
-  request_path        = "/"
 }
 
 # load balancer rule for HTTP
@@ -116,7 +115,7 @@ resource "azurerm_lb_rule" "http_rule" {
   probe_id                       = azurerm_lb_probe.http_probe.id
 }
 
-# network interface for VMs
+# network interfaces for VMs
 resource "azurerm_network_interface" "nic" {
   count               = 2
   name                = "myNIC-${count.index + 1}"
@@ -138,6 +137,48 @@ resource "azurerm_network_interface_backend_address_pool_association" "example_l
   backend_address_pool_id = azurerm_lb_backend_address_pool.bpepool.id
 }
 
+# Load Balancer NAT Rules
+resource "azurerm_lb_nat_rule" "ssh_nat_rule_vm1" {
+  name                           = "SSH-NAT-Rule-VM1"
+  resource_group_name            = azurerm_resource_group.rg.name
+  loadbalancer_id                = azurerm_lb.lb.id
+  frontend_ip_configuration_name = "PublicIPAddress"
+  protocol                       = "Tcp"
+  frontend_port                  = 2201
+  backend_port                   = 22
+}
+
+resource "azurerm_lb_nat_rule" "ssh_nat_rule_vm2" {
+  name                           = "SSH-NAT-Rule-VM2"
+  resource_group_name            = azurerm_resource_group.rg.name
+  loadbalancer_id                = azurerm_lb.lb.id
+  frontend_ip_configuration_name = "PublicIPAddress"
+  protocol                       = "Tcp"
+  frontend_port                  = 2202
+  backend_port                   = 22
+}
+
+# Associate NAT rule with NIC for VM1
+resource "azurerm_network_interface_nat_rule_association" "nic_nat_rule_vm1" {
+  network_interface_id      = azurerm_network_interface.nic[0].id
+  ip_configuration_name     = "internal"
+  nat_rule_id               = azurerm_lb_nat_rule.ssh_nat_rule_vm1.id
+}
+
+# Associate NAT rule with NIC for VM2
+resource "azurerm_network_interface_nat_rule_association" "nic_nat_rule_vm2" {
+  network_interface_id      = azurerm_network_interface.nic[1].id
+  ip_configuration_name     = "internal"
+  nat_rule_id               = azurerm_lb_nat_rule.ssh_nat_rule_vm2.id
+}
+
+# Associate NSG with each NIC
+resource "azurerm_network_interface_security_group_association" "nsg_association" {
+  count                 = 2
+  network_interface_id  = azurerm_network_interface.nic[count.index].id
+  network_security_group_id = azurerm_network_security_group.nsg.id
+}
+
 # Create the VMs
 resource "azurerm_linux_virtual_machine" "vm" {
   count                 = 2
@@ -146,8 +187,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   resource_group_name   = azurerm_resource_group.rg.name
   size                  = "Standard_B1s"
   admin_username        = var.admin_username
-  admin_password        = "lpBtu-Jy<X0?7(*,J!2D<djaDpa,"
-  disable_password_authentication = false
+  disable_password_authentication = true
 
   network_interface_ids = [azurerm_network_interface.nic[count.index].id]
   availability_set_id   = azurerm_availability_set.avset.id
@@ -163,6 +203,11 @@ resource "azurerm_linux_virtual_machine" "vm" {
     offer     = "0001-com-ubuntu-server-jammy"
     sku       = "22_04-lts"
     version   = "latest"
+  }
+
+    admin_ssh_key {
+    username   = var.admin_username
+    public_key = file("ssh1.pub")
   }
 
 }
