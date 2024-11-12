@@ -52,11 +52,9 @@ resource "azurerm_network_security_group" "nsg" {
 # Create subnets within the virtual network
 resource "azurerm_subnet" "subnet" {
   count                = 2
-  # name                 = var.subnet1_name
   name                 = "subnet${count.index + 1}"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  # address_prefixes     = [var.subnet1_prefix]
   address_prefixes     = ["10.0.${count.index + 1}.0/24"]
 }
 
@@ -89,6 +87,12 @@ resource "azurerm_network_interface" "nic" {
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.pip[count.index].id
   }
+}
+
+# Generate SSH key
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
 }
 
 # Create the VMs
